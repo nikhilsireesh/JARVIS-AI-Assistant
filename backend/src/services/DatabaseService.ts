@@ -24,24 +24,32 @@ export class DatabaseService {
     const dbUrl = process.env.DATABASE_URL;
     
     if (dbUrl) {
-      try {
-        console.log('JARVIS DB: Attempting to connect to PostgreSQL...');
-        this.pgPool = new Pool({
-          connectionString: dbUrl,
-          connectionTimeoutMillis: 5000 // 5 seconds timeout
-        });
-        
-        // Test connection
-        const client = await this.pgPool.connect();
-        client.release();
-        
-        this.isPostgres = true;
-        console.log('JARVIS DB: Successfully connected to PostgreSQL.');
-      } catch (err) {
-        console.warn('JARVIS DB: Failed to connect to PostgreSQL. Error:', (err as Error).message);
-        console.warn('JARVIS DB: Falling back to SQLite...');
-        this.setupSqlite();
+      // No SQLite fallback when DATABASE_URL is set: on a hosted server the SQLite file is
+      // wiped on every redeploy, so silently switching to it would lose data.
+      // Retries cover serverless Postgres (e.g. Neon) waking up from scale-to-zero.
+      this.pgPool = new Pool({
+        connectionString: dbUrl,
+        connectionTimeoutMillis: 15000
+      });
+
+      const maxAttempts = 5;
+      for (let attempt = 1; ; attempt++) {
+        try {
+          console.log(`JARVIS DB: Connecting to PostgreSQL (attempt ${attempt}/${maxAttempts})...`);
+          const client = await this.pgPool.connect();
+          client.release();
+          break;
+        } catch (err) {
+          console.warn('JARVIS DB: PostgreSQL connection failed:', (err as Error).message);
+          if (attempt >= maxAttempts) {
+            throw new Error('Could not connect to PostgreSQL at DATABASE_URL. Unset DATABASE_URL to use SQLite.');
+          }
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
       }
+
+      this.isPostgres = true;
+      console.log('JARVIS DB: Successfully connected to PostgreSQL.');
     } else {
       console.log('JARVIS DB: DATABASE_URL not specified. Defaulting to SQLite.');
       this.setupSqlite();
@@ -165,7 +173,7 @@ export class DatabaseService {
           access_token TEXT NOT NULL,
           refresh_token TEXT,
           expiry_date BIGINT NOT NULL,
-          scopes TEXT[],
+          scopes TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );

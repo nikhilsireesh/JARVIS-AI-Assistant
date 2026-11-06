@@ -25,6 +25,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check for the hosting platform
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Mount routes
 app.use('/api', apiRouter);
 

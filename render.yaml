@@ -1,0 +1,35 @@
+# Render Blueprint for the JARVIS AI backend (Express API).
+# The Next.js frontend is deployed separately on Vercel.
+services:
+  - type: web
+    name: jarvis-ai-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    # --include=dev: TypeScript is a devDependency and NODE_ENV=production would skip it
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      # Values below are entered in the Render dashboard when the Blueprint is created
+      - key: DATABASE_URL
+        sync: false
+      - key: ENCRYPTION_KEY # 64-character hex string
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI # https://<vercel-domain>/api/auth/callback/google
+        sync: false
+      - key: FRONTEND_URL # https://<vercel-domain>
+        sync: false
+      - key: DEFAULT_SPREADSHEET_ID
+        sync: false
