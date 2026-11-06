@@ -2,9 +2,6 @@
 
 JARVIS AI is a personal assistant that operates your Google Workspace through natural language. A Gemini model with function calling reads, sends and archives Gmail, manages Calendar events and reads/writes Google Sheets on your behalf, with OAuth tokens encrypted at rest, scheduled automations and an activity log of every AI action. The Next.js frontend provides a glassmorphic dashboard with chat, command palette and per-service views.
 
-🌐 **Live:** https://harshitha-jarvis-assistant.netlify.app/
-
----
 
 ## 🚀 System Architecture Overview
 
